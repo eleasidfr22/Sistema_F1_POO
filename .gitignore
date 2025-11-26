@@ -1,0 +1,13 @@
+# .gitignore
+
+# 1. Entorno virtual
+venv/
+.idea/  # Si usas PyCharm u otro IDE
+*.sublime-workspace # Si usas Sublime Text
+
+# 2. Archivos de Python generados
+__pycache__/
+*.pyc
+
+# 3. Datos sensibles (¡CRUCIAL!)
+.env
