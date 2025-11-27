@@ -16,7 +16,7 @@ DB_CONFIG = {
     "charset": "utf8mb4",
 }
 
-POOL_NAME = os.getenv("POOL_NAME", "venta_pool")
+POOL_NAME = os.getenv("POOL_NAME", "sistemaf1_pool")
 POOL_SIZE = int(os.getenv("POOL_SIZE", 5))
 
 pool = pooling.MySQLConnectionPool(
