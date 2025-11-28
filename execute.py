@@ -112,7 +112,12 @@ def registrar_piloto():
     if experiencia is None:
         return
     
-    # Opcion para asignar piloto a un equipo
+    # NUEVA LÍNEA: Permitir ingresar puntos
+    puntos = simpledialog.askfloat("Registrar Piloto", "Puntos del piloto:", minvalue=0, initialvalue=0.0)
+    if puntos is None:
+        puntos = 0.0
+    
+    # Opcional: asignar a un equipo
     nombre_equipo = simpledialog.askstring("Registrar Piloto", "Nombre del equipo (dejar vacío si no tiene):")
     id_equipo = None
     if nombre_equipo:
@@ -123,7 +128,7 @@ def registrar_piloto():
             messagebox.showwarning("Equipo no encontrado", "El equipo no existe. Se registrará sin equipo.")
     
     try:
-        piloto = Piloto.crear(nombre.strip(), nacionalidad.strip(), experiencia, 0.0, id_equipo)
+        piloto = Piloto.crear(nombre.strip(), nacionalidad.strip(), experiencia, puntos, id_equipo)
         messagebox.showinfo("Éxito", f"Piloto registrado: {piloto.nombre} (ID: {piloto.id_piloto})")
         listar_pilotos()
     except Exception as e:
@@ -351,6 +356,86 @@ def listar_carreras():
             lb_output.insert(tk.END, f"[{c.id_carrera}] {c.nombre} - {c.fecha} ({c.vueltas} vueltas)")
     except Exception as e:
         messagebox.showerror("Error", f"Error al listar carreras:\n{e}")
+        
+def registrar_resultado_carrera():
+    """Registra el resultado de un piloto en una carrera"""
+    # Seleccionar carrera
+    nombre_carrera = simpledialog.askstring("Registrar Resultado", "Nombre de la carrera:")
+    if not nombre_carrera:
+        return
+    
+    carrera = Carrera.buscar_por_nombre(nombre_carrera.strip())
+    if not carrera:
+        messagebox.showwarning("No encontrada", "Carrera no encontrada.")
+        return
+    
+    # Seleccionar piloto
+    nombre_piloto = simpledialog.askstring("Registrar Resultado", "Nombre del piloto:")
+    if not nombre_piloto:
+        return
+    
+    piloto = Piloto.buscar_por_nombre(nombre_piloto.strip())
+    if not piloto:
+        messagebox.showwarning("No encontrado", "Piloto no encontrado.")
+        return
+    
+    # Ingresar datos del resultado
+    posicion = simpledialog.askinteger("Registrar Resultado", "Posición final (1-20):", minvalue=1, maxvalue=20)
+    if not posicion:
+        return
+    
+    tiempo_str = simpledialog.askstring("Registrar Resultado", "Tiempo total (HH:MM:SS):", initialvalue="01:30:45")
+    if not tiempo_str:
+        return
+    
+    # Calcular puntos según posición (sistema F1)
+    puntos_f1 = {1: 25, 2: 18, 3: 15, 4: 12, 5: 10, 6: 8, 7: 6, 8: 4, 9: 2, 10: 1}
+    puntos_obtenidos = puntos_f1.get(posicion, 0)
+    
+    try:
+        # Registrar resultado
+        carrera.registrar_resultado(piloto.id_piloto, posicion, tiempo_str, puntos_obtenidos)
+        
+        # Actualizar puntos del piloto
+        piloto.puntos += puntos_obtenidos
+        piloto.actualizar_puntos()
+        
+        messagebox.showinfo("Éxito", 
+            f"Resultado registrado:\n"
+            f"Piloto: {piloto.nombre}\n"
+            f"Posición: {posicion}°\n"
+            f"Puntos obtenidos: {puntos_obtenidos}\n"
+            f"Total acumulado: {piloto.puntos}")
+        
+        listar_pilotos()
+    except Exception as e:
+        messagebox.showerror("Error", f"Error al registrar resultado:\n{e}")
+
+def asignar_puntos_piloto():
+    """Asigna puntos manualmente a un piloto"""
+    nombre = simpledialog.askstring("Asignar Puntos", "Nombre del piloto:")
+    if not nombre:
+        return
+    
+    piloto = Piloto.buscar_por_nombre(nombre.strip())
+    if not piloto:
+        messagebox.showwarning("No encontrado", "Piloto no encontrado.")
+        return
+    
+    puntos_nuevos = simpledialog.askfloat("Asignar Puntos", 
+        f"Puntos actuales: {piloto.puntos}\n\nPuntos a sumar:", 
+        minvalue=0, initialvalue=0)
+    
+    if puntos_nuevos is None:
+        return
+    
+    try:
+        piloto.puntos += puntos_nuevos
+        piloto.actualizar_puntos()
+        messagebox.showinfo("Éxito", f"{piloto.nombre} ahora tiene {piloto.puntos} puntos")
+        listar_pilotos()
+    except Exception as e:
+        messagebox.showerror("Error", f"Error al asignar puntos:\n{e}")
 
 def ver_resultados_carrera():
     """Muestra los resultados de una carrera"""
@@ -448,6 +533,7 @@ menu_pilotos = tk.Menu(menubar, tearoff=0)
 menu_pilotos.add_command(label="Registrar piloto", command=registrar_piloto)
 menu_pilotos.add_command(label="Modificar piloto", command=modificar_piloto)
 menu_pilotos.add_command(label="Eliminar piloto", command=eliminar_piloto)
+menu_pilotos.add_command(label="Asignar puntos", command=asignar_puntos_piloto)  # ← NUEVA LÍNEA
 menu_pilotos.add_separator()
 menu_pilotos.add_command(label="Listar pilotos", command=listar_pilotos)
 menubar.add_cascade(label="Pilotos", menu=menu_pilotos)
@@ -464,6 +550,8 @@ menubar.add_cascade(label="Autos", menu=menu_autos)
 # Menú CARRERAS
 menu_carreras = tk.Menu(menubar, tearoff=0)
 menu_carreras.add_command(label="Registrar carrera", command=registrar_carrera)
+menu_carreras.add_command(label="Registrar resultado", command=registrar_resultado_carrera)  # ← NUEVA LÍNEA
+menu_carreras.add_separator()
 menu_carreras.add_command(label="Listar carreras", command=listar_carreras)
 menu_carreras.add_command(label="Ver resultados", command=ver_resultados_carrera)
 menubar.add_cascade(label="Carreras", menu=menu_carreras)
